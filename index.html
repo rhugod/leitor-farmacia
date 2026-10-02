@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor da Farmácia — Protótipo</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f6f8; color: #18202a;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 22px 16px 40px; }
+  .card {
+    background: white; border-radius: 20px; padding: 22px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.08); margin-bottom: 16px;
+  }
+  h1 { margin: 0 0 6px; font-size: 25px; }
+  .sub { margin: 0 0 20px; color: #65707c; }
+  label { display:block; font-size:14px; font-weight:700; margin: 14px 0 7px; }
+  input {
+    width:100%; padding:14px; border:1px solid #d7dce2; border-radius:12px;
+    font-size:17px; outline:none;
+  }
+  button {
+    width:100%; border:0; border-radius:13px; padding:14px 16px;
+    font-size:16px; font-weight:700; cursor:pointer; margin-top:12px;
+    background:#1f6feb; color:white;
+  }
+  button.secondary { background:#e9eef5; color:#1d2733; }
+  .result { display:none; }
+  .found {
+    border-left:5px solid #22a06b; padding-left:14px;
+  }
+  .name { font-size:21px; font-weight:800; margin-bottom:14px; }
+  .row { padding:9px 0; border-bottom:1px solid #edf0f2; }
+  .row:last-child { border-bottom:0; }
+  .key { color:#697582; font-size:13px; }
+  .value { font-weight:700; margin-top:2px; }
+  .notfound { color:#9a3412; display:none; }
+  #reader { width:100%; margin-top:12px; overflow:hidden; border-radius:14px; }
+  .hint { font-size:13px; color:#697582; line-height:1.45; margin-top:12px; }
+  .badge { display:inline-block; background:#eef5ff; color:#1f6feb; padding:5px 9px; border-radius:999px; font-size:12px; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <span class="badge">PROTÓTIPO 01</span>
+    <h1>Leitor da Farmácia</h1>
+    <p class="sub">Consulte um produto pelo código de barras.</p>
+
+    <label for="barcode">Código de barras</label>
+    <input id="barcode" inputmode="numeric" placeholder="Ex.: 7891150060968">
+
+    <button onclick="consultar()">🔎 Consultar produto</button>
+    <button class="secondary" onclick="abrirScanner()">📷 Escanear com a câmera</button>
+
+    <div id="reader"></div>
+    <p class="hint">No iPhone, o navegador pode pedir autorização para usar a câmera. O scanner depende de suporte do navegador.</p>
+  </div>
+
+  <div id="resultado" class="card result">
+    <div class="found">
+      <div class="name" id="nome"></div>
+      <div class="row"><div class="key">Setor</div><div class="value" id="setor"></div></div>
+      <div class="row"><div class="key">Responsável pela reposição</div><div class="value" id="responsavel"></div></div>
+      <div class="row"><div class="key">Código de barras</div><div class="value" id="codigo"></div></div>
+    </div>
+  </div>
+
+  <div id="naoEncontrado" class="card notfound">
+    <strong>Produto não cadastrado.</strong>
+    <p>Este protótipo ainda não conhece esse código.</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+const produtos = {
+  "7891150060968": {
+    nome: "CLEAR MEN ANTICASPA SHAMPOO",
+    setor: "Perfumaria",
+    responsavel: "Hellen"
+  }
+};
+
+function consultar(codigo = document.getElementById("barcode").value.trim()) {
+  document.getElementById("resultado").style.display = "none";
+  document.getElementById("naoEncontrado").style.display = "none";
+  const p = produtos[codigo];
+  if (!p) {
+    document.getElementById("naoEncontrado").style.display = "block";
+    return;
+  }
+  document.getElementById("nome").textContent = p.nome;
+  document.getElementById("setor").textContent = p.setor;
+  document.getElementById("responsavel").textContent = p.responsavel;
+  document.getElementById("codigo").textContent = codigo;
+  document.getElementById("resultado").style.display = "block";
+}
+
+let scanner;
+async function abrirScanner() {
+  const reader = document.getElementById("reader");
+  reader.innerHTML = "";
+  scanner = new Html5Qrcode("reader");
+  try {
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 280, height: 120 } },
+      async decodedText => {
+        document.getElementById("barcode").value = decodedText;
+        await scanner.stop();
+        reader.innerHTML = "";
+        consultar(decodedText);
+      },
+      () => {}
+    );
+  } catch (e) {
+    reader.innerHTML = "<p class='hint'>Não foi possível abrir a câmera. Você pode testar digitando o código manualmente.</p>";
+  }
+}
+</script>
+</body>
+</html>
